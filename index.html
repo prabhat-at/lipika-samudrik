@@ -303,9 +303,12 @@ function gst(jde) {
 
 function ascendant(lst, lat, eps) {
   const ramc = R(lst), e = R(eps), phi = R(lat);
-  const x = -Math.cos(ramc);
-  const y = Math.sin(ramc)*Math.cos(e) + Math.tan(phi)*Math.sin(e);
-  return n360(D(Math.atan2(x, y)));
+  const num = -Math.cos(ramc);
+  const den = Math.sin(ramc)*Math.cos(e) + Math.tan(phi)*Math.sin(e);
+  let asc = D(Math.atan2(num, den));
+  // atan2 returns ascendant or descendant; when RAMC in 0-180° we get the descendant — add 180°
+  if (Math.sin(ramc) > 0) asc += 180;
+  return n360(asc);
 }
 
 function sunLon(t) {
@@ -340,19 +343,33 @@ function moonLon(t) {
   return n360(lon);
 }
 
-function planetLon(name, t) {
-  // Mean longitude + simplified equation of center (Meeus ch.33)
-  const p = {
-    mercury: { L0:252.251, Lv:149474.072, e:0.206, M0:174.794 },
-    venus:   { L0:181.980, Lv: 58519.213, e:0.007, M0:212.448 },
-    mars:    { L0:355.433, Lv: 19141.696, e:0.093, M0: 19.387 },
-    jupiter: { L0: 34.351, Lv:  3036.302, e:0.049, M0: 20.020 },
-    saturn:  { L0: 50.077, Lv:  1223.511, e:0.057, M0:317.021 },
+// Heliocentric ecliptic longitude + radius (Keplerian elements, Meeus Table 31.a)
+function helioPos(name, t) {
+  const d = {
+    earth:   { a:1.000000, e:0.01671, L0:100.4664,  Lv:36000.7698,  om:102.9373 },
+    mercury: { a:0.387098, e:0.20563, L0:252.2509,  Lv:149474.0714, om:77.4561  },
+    venus:   { a:0.723330, e:0.00677, L0:181.9798,  Lv:58519.2131,  om:131.5637 },
+    mars:    { a:1.523679, e:0.09341, L0:355.4332,  Lv:19140.2993,  om:336.0590 },
+    jupiter: { a:5.202560, e:0.04840, L0:34.3351,   Lv:3034.9057,   om:14.7295  },
+    saturn:  { a:9.554909, e:0.05561, L0:50.0774,   Lv:1222.1138,   om:93.0572  },
   }[name];
-  if (!p) return 0;
-  const M = R(n360(p.M0 + p.Lv * t));
-  const C = (2*p.e - p.e**3/4)*Math.sin(M) + (5/4)*p.e**2*Math.sin(2*M);
-  return n360(p.L0 + p.Lv*t + D(C));
+  const L = n360(d.L0 + d.Lv * t);
+  const M = R(n360(L - d.om));           // mean anomaly (radians)
+  const e = d.e;
+  // Equation of center (radians)
+  const C = (2*e - e**3/4)*Math.sin(M) + (5/4)*e**2*Math.sin(2*M) + (13/12)*e**3*Math.sin(3*M);
+  const lambda = n360(L + D(C));         // true heliocentric longitude
+  const r = d.a * (1 - e*e) / (1 + e*Math.cos(M + C)); // radius vector (AU)
+  return { lon: lambda, r };
+}
+
+// Geocentric ecliptic longitude via heliocentric vector subtraction
+function geocentricLon(name, t) {
+  const p = helioPos(name, t);
+  const earth = helioPos('earth', t);
+  const x = p.r * Math.cos(R(p.lon)) - earth.r * Math.cos(R(earth.lon));
+  const y = p.r * Math.sin(R(p.lon)) - earth.r * Math.sin(R(earth.lon));
+  return n360(D(Math.atan2(y, x)));
 }
 
 function rahuLon(t) {
@@ -381,11 +398,11 @@ async function buildChart(yr, mo, dy, hr, mn, utcOff, lat, lon) {
     lagna:   rashi(sid(asc, ay)),
     sun:     rashi(sid(sunLon(t), ay)),
     moon:    rashi(sid(moonLon(t), ay)),
-    mars:    rashi(sid(planetLon('mars',    t), ay)),
-    mercury: rashi(sid(planetLon('mercury', t), ay)),
-    jupiter: rashi(sid(planetLon('jupiter', t), ay)),
-    venus:   rashi(sid(planetLon('venus',   t), ay)),
-    saturn:  rashi(sid(planetLon('saturn',  t), ay)),
+    mars:    rashi(sid(geocentricLon('mars',    t), ay)),
+    mercury: rashi(sid(geocentricLon('mercury', t), ay)),
+    jupiter: rashi(sid(geocentricLon('jupiter', t), ay)),
+    venus:   rashi(sid(geocentricLon('venus',   t), ay)),
+    saturn:  rashi(sid(geocentricLon('saturn',  t), ay)),
     rahu:    rashi(sid(rahuTrop, ay)),
     ketu:    rashi(sid(n360(rahuTrop + 180), ay)),
   };
