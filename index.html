@@ -301,14 +301,21 @@ function gst(jde) {
   return n360(th);
 }
 
+function mcLon(lst, eps) {
+  // Ecliptic longitude of the Midheaven (MC)
+  return n360(D(Math.atan2(Math.sin(R(lst)), Math.cos(R(lst)) * Math.cos(R(eps)))));
+}
+
 function ascendant(lst, lat, eps) {
   const ramc = R(lst), e = R(eps), phi = R(lat);
   const num = -Math.cos(ramc);
   const den = Math.sin(ramc)*Math.cos(e) + Math.tan(phi)*Math.sin(e);
-  let asc = D(Math.atan2(num, den));
-  // atan2 returns ascendant or descendant; when RAMC in 0-180° we get the descendant — add 180°
-  if (Math.sin(ramc) > 0) asc += 180;
-  return n360(asc);
+  let asc = n360(D(Math.atan2(num, den)));
+  // Ascendant must be in the ascending semicircle: [MC, MC+180°)
+  // If not, atan2 returned the descendant — add 180° to flip it
+  const mc = mcLon(lst, eps);
+  if (n360(asc - mc) >= 180) asc = n360(asc + 180);
+  return asc;
 }
 
 function sunLon(t) {
