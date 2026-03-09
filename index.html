@@ -205,6 +205,30 @@
       filter: invert(0.6) sepia(1) saturate(3) hue-rotate(220deg);
     }
     select option { background: #1e1040; }
+    .place-wrap { position: relative; }
+    .place-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0; right: 0;
+      background: #1a0f3a;
+      border: 1px solid rgba(139,92,246,0.4);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      z-index: 100;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .place-option {
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #d4b8ff;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(139,92,246,0.15);
+      line-height: 1.4;
+    }
+    .place-option:last-child { border-bottom: none; }
+    .place-option:hover { background: rgba(124,58,237,0.3); }
+    .place-option strong { color: #e9d5ff; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -235,7 +259,11 @@
 
   <div class="form-group">
     <label>Janam Sthan</label>
-    <input type="text" id="place" placeholder="Sheher ka naam..." autocomplete="off" />
+    <div class="place-wrap">
+      <input type="text" id="place" placeholder="Sheher ka naam likhein..." autocomplete="off"
+             oninput="onPlaceInput(this.value)" onblur="hidePlaceDropdown()" />
+      <div class="place-dropdown" id="place-dropdown" style="display:none"></div>
+    </div>
   </div>
 
   <div class="form-group">
@@ -568,8 +596,9 @@ async function startConversation(name, chart) {
   const preds = makePredictions(chart);
   resetState(name, chart, preds);
 
-  // Greet
-  await lipikaMsg(`Haan ${name} ji, namaskar. 🙏`, 300);
+  // Greet + intro
+  await lipikaMsg(`Haan ${name} ji, namaskar! 🙏`, 300);
+  await lipikaMsg(`Main Lipika hoon — main sirf til, scar ya janam ke nishaan bata sakti hoon. Samudrik Shastra ka gyaan rakhti hoon, aur wo bhi chart dekh ke, seedha.`, 500);
 
   // First prediction (lagna)
   await lipikaMsg(
@@ -623,8 +652,55 @@ async function nextPrediction() {
 }
 
 // ────────────────────────────────────────────────────────────────
-//  GEOCODING
+//  GEOCODING + AUTOCOMPLETE
 // ────────────────────────────────────────────────────────────────
+let selectedGeo = null; // set when user picks from dropdown
+let placeDebounce = null;
+
+function onPlaceInput(val) {
+  selectedGeo = null; // clear previous selection
+  clearTimeout(placeDebounce);
+  if (val.trim().length < 3) { hidePlaceDropdown(); return; }
+  placeDebounce = setTimeout(() => fetchPlaceSuggestions(val), 350);
+}
+
+async function fetchPlaceSuggestions(query) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+    showPlaceDropdown(data);
+  } catch(_) { hidePlaceDropdown(); }
+}
+
+function showPlaceDropdown(results) {
+  const dd = document.getElementById('place-dropdown');
+  if (!results.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = results.map(r => {
+    const parts = r.display_name.split(', ');
+    const main  = parts.slice(0, 2).join(', ');
+    const sub   = parts.slice(2, 4).join(', ');
+    return `<div class="place-option"
+      onmousedown="selectPlace(${r.lat},${r.lon},'${r.display_name.replace(/'/g,"\\'")}')">
+      <strong>${main}</strong>${sub ? '<br><span style="font-size:11px;color:#9b7fd4">'+sub+'</span>' : ''}
+    </div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function selectPlace(lat, lon, name) {
+  selectedGeo = { lat: parseFloat(lat), lon: parseFloat(lon) };
+  document.getElementById('place').value = name;
+  hidePlaceDropdown();
+}
+
+function hidePlaceDropdown() {
+  setTimeout(() => {
+    const dd = document.getElementById('place-dropdown');
+    if (dd) dd.style.display = 'none';
+  }, 150);
+}
+
 async function geocode(place) {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
   const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
@@ -655,8 +731,13 @@ async function startReading() {
   statusEl.className = 'status-msg';
 
   try {
-    statusEl.textContent = 'Jagah dhoondh rahi hoon...';
-    const { lat, lon } = await geocode(place);
+    let lat, lon;
+    if (selectedGeo) {
+      ({ lat, lon } = selectedGeo);
+    } else {
+      statusEl.textContent = 'Jagah dhoondh rahi hoon...';
+      ({ lat, lon } = await geocode(place));
+    }
 
     statusEl.textContent = 'Kundli dekh rahi hoon...';
     const [yr, mo, dy] = dob.split('-').map(Number);
