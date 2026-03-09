@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lipika – Samudrik Shastra</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0720;
+      color: #f0e6ff;
+      min-height: 100vh;
+    }
+    #form-section {
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 36px 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #c084fc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin: 0 auto 14px;
+      box-shadow: 0 0 32px rgba(139,92,246,0.4);
+    }
+    .header h1 { font-size: 26px; color: #e9d5ff; font-weight: 700; }
+    .header p  { color: #a78bfa; font-size: 13px; margin-top: 5px; }
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 11px;
+      color: #c4b5fd;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 10px;
+      color: #f0e6ff;
+      font-size: 15px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    input::placeholder { color: #6b5fa0; }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(139,92,246,0.15);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #7c3aed, #9b4dca);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover  { opacity: 0.88; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-msg {
+      text-align: center;
+      color: #a78bfa;
+      font-size: 13px;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+    .error-msg { color: #f87171; }
+
+    /* ── Chat ── */
+    #chat-section {
+      display: none;
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+    }
+    .back-btn {
+      background: none;
+      border: 1px solid rgba(139,92,246,0.35);
+      color: #a78bfa;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(139,92,246,0.25);
+      margin-bottom: 20px;
+    }
+    .chat-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #c084fc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .chat-info h2 { font-size: 17px; color: #e9d5ff; }
+    .chat-info p  { font-size: 12px; color: #a78bfa; margin-top: 2px; }
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg {
+      max-width: 88%;
+      padding: 11px 15px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.55;
+      animation: fadeIn 0.3s ease;
+    }
+    .msg.lipika {
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(139,92,246,0.28);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.user {
+      background: rgba(139,92,246,0.35);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .typing-wrap { align-self: flex-start; }
+    .typing {
+      display: inline-flex;
+      gap: 5px;
+      padding: 12px 16px;
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(139,92,246,0.28);
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+    }
+    .typing span {
+      width: 7px; height: 7px;
+      background: #a78bfa;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-7px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .choice-wrap {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+      animation: fadeIn 0.3s ease;
+    }
+    .choice-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(139,92,246,0.4);
+      background: rgba(124,58,237,0.15);
+      color: #e9d5ff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .choice-btn:hover { background: rgba(124,58,237,0.35); }
+    .choice-btn.yes { border-color: rgba(74,222,128,0.5); color: #86efac; }
+    .choice-btn.no  { border-color: rgba(248,113,113,0.5); color: #fca5a5; }
+    .lagna-badge {
+      display: inline-block;
+      font-size: 11px;
+      color: #a78bfa;
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-top: 8px;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6) sepia(1) saturate(3) hue-rotate(220deg);
+    }
+    select option { background: #1e1040; }
+  </style>
+</head>
+<body>
+
+<!-- ── Form ── -->
+<div id="form-section">
+  <div class="header">
+    <div class="avatar">🌸</div>
+    <h1>Lipika</h1>
+    <p>Samudrik Shastra Visheshagya · Til Gyan · Hasta Rekha</p>
+  </div>
+
+  <div class="form-group">
+    <label>Aapka Naam</label>
+    <input type="text" id="name" placeholder="Apna naam likhein..." autocomplete="off" />
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Janam Tithi</label>
+      <input type="date" id="dob" />
+    </div>
+    <div class="form-group">
+      <label>Janam Samay</label>
+      <input type="time" id="tob" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Janam Sthan</label>
+    <input type="text" id="place" placeholder="Sheher ka naam..." autocomplete="off" />
+  </div>
+
+  <div class="form-group">
+    <label>Time Zone</label>
+    <select id="timezone">
+      <option value="5.5"  selected>IST — UTC+5:30 (India)</option>
+      <option value="5.75">NPT — UTC+5:45 (Nepal)</option>
+      <option value="6"   >BST — UTC+6:00 (Bangladesh)</option>
+      <option value="5"   >PKT — UTC+5:00 (Pakistan)</option>
+      <option value="5.5" >SLT — UTC+5:30 (Sri Lanka)</option>
+      <option value="0"   >UTC — UTC+0:00</option>
+      <option value="-5"  >EST — UTC-5:00 (US East)</option>
+      <option value="-8"  >PST — UTC-8:00 (US West)</option>
+      <option value="1"   >CET — UTC+1:00 (Europe Central)</option>
+      <option value="8"   >CST — UTC+8:00 (China/Singapore)</option>
+    </select>
+  </div>
+
+  <button class="btn" onclick="startReading()" id="startBtn">Mujhe Batao ✨</button>
+  <p class="status-msg" id="status-msg"></p>
+</div>
+
+<!-- ── Chat ── -->
+<div id="chat-section">
+  <button class="back-btn" onclick="goBack()">← Wapas</button>
+  <div class="chat-header">
+    <div class="chat-avatar">🌸</div>
+    <div class="chat-info">
+      <h2>Lipika Ji</h2>
+      <p>Samudrik Shastra · Til Gyan Visheshagya</p>
+    </div>
+  </div>
+  <div class="messages" id="messages"></div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────────────
+//  ASTRONOMY — Jean Meeus algorithms
+// ────────────────────────────────────────────────────────────────
+const R = d => d * Math.PI / 180;
+const D = r => r * 180 / Math.PI;
+const n360 = d => ((d % 360) + 360) % 360;
+
+function calcJDE(yr, mo, dy, utH) {
+  if (mo <= 2) { yr--; mo += 12; }
+  const A = Math.floor(yr / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25*(yr+4716)) + Math.floor(30.6001*(mo+1)) + dy + utH/24 + B - 1524.5;
+}
+
+function T(jde) { return (jde - 2451545.0) / 36525; }
+
+function obliquity(t) {
+  return 23.4392911 - 0.0130042*t - 0.00000164*t*t + 0.000000504*t*t*t;
+}
+
+function gst(jde) {
+  const t  = T(jde);
+  const j0 = Math.floor(jde - 0.5) + 0.5;
+  const t0 = (j0 - 2451545.0) / 36525;
+  let   th = 100.4606184 + 36000.77004*t0 + 0.000387933*t0*t0;
+  th += 360.98564724 * (jde - j0);
+  return n360(th);
+}
+
+function ascendant(lst, lat, eps) {
+  const ramc = R(lst), e = R(eps), phi = R(lat);
+  const x = -Math.cos(ramc);
+  const y = Math.sin(ramc)*Math.cos(e) + Math.tan(phi)*Math.sin(e);
+  return n360(D(Math.atan2(x, y)));
+}
+
+function sunLon(t) {
+  const L0 = 280.46646 + 36000.76983*t + 0.0003032*t*t;
+  const M  = R(357.52911 + 35999.05029*t - 0.0001537*t*t);
+  const C  = (1.914602 - 0.004817*t - 0.000014*t*t)*Math.sin(M)
+           + (0.019993 - 0.000101*t)*Math.sin(2*M)
+           + 0.000289*Math.sin(3*M);
+  return n360(L0 + C);
+}
+
+function moonLon(t) {
+  const Lp = 218.3164477 + 481267.88123421*t - 0.0015786*t*t;
+  const M  = R(134.9633964 + 477198.8675055*t + 0.0087414*t*t);
+  const Mp = R(357.5291092 + 35999.0502909*t  - 0.0001536*t*t);
+  const F  = R(93.2720950  + 483202.0175233*t - 0.0036539*t*t);
+  const Dv = R(297.8501921 + 445267.1114034*t - 0.0018819*t*t);
+  const lon = Lp
+    + 6.288774*Math.sin(M)
+    + 1.274027*Math.sin(2*Dv - M)
+    + 0.658314*Math.sin(2*Dv)
+    + 0.213618*Math.sin(2*M)
+    - 0.185116*Math.sin(Mp)
+    - 0.114332*Math.sin(2*F)
+    + 0.058793*Math.sin(2*(Dv-M))
+    + 0.057066*Math.sin(2*Dv - Mp - M)
+    + 0.053322*Math.sin(2*Dv + M)
+    + 0.045758*Math.sin(2*Dv - Mp)
+    - 0.040923*Math.sin(Mp - M)
+    - 0.034720*Math.sin(Dv)
+    - 0.030383*Math.sin(Mp + M);
+  return n360(lon);
+}
+
+function planetLon(name, t) {
+  // Mean longitude + simplified equation of center (Meeus ch.33)
+  const p = {
+    mercury: { L0:252.251, Lv:149474.072, e:0.206, M0:174.794 },
+    venus:   { L0:181.980, Lv: 58519.213, e:0.007, M0:212.448 },
+    mars:    { L0:355.433, Lv: 19141.696, e:0.093, M0: 19.387 },
+    jupiter: { L0: 34.351, Lv:  3036.302, e:0.049, M0: 20.020 },
+    saturn:  { L0: 50.077, Lv:  1223.511, e:0.057, M0:317.021 },
+  }[name];
+  if (!p) return 0;
+  const M = R(n360(p.M0 + p.Lv * t));
+  const C = (2*p.e - p.e**3/4)*Math.sin(M) + (5/4)*p.e**2*Math.sin(2*M);
+  return n360(p.L0 + p.Lv*t + D(C));
+}
+
+function rahuLon(t) {
+  return n360(125.0445479 - 1934.1362608*t + 0.0020754*t*t);
+}
+
+function lahiriAyanamsa(t) {
+  // Chitra-paksha (Lahiri) approximation
+  return 23.85 + 1.3972*t;
+}
+
+function sid(tropLon, ayan) { return n360(tropLon - ayan); }
+function rashi(lon)         { return Math.floor(lon / 30) + 1; } // 1-12
+
+async function buildChart(yr, mo, dy, hr, mn, utcOff, lat, lon) {
+  const utH = hr + mn/60 - utcOff;
+  const jde = calcJDE(yr, mo, dy, utH);
+  const t   = T(jde);
+  const eps = obliquity(t);
+  const lst = n360(gst(jde) + lon);
+  const asc = ascendant(lst, lat, eps);
+  const ay  = lahiriAyanamsa(t);
+
+  const rahuTrop = rahuLon(t);
+  return {
+    lagna:   rashi(sid(asc, ay)),
+    sun:     rashi(sid(sunLon(t), ay)),
+    moon:    rashi(sid(moonLon(t), ay)),
+    mars:    rashi(sid(planetLon('mars',    t), ay)),
+    mercury: rashi(sid(planetLon('mercury', t), ay)),
+    jupiter: rashi(sid(planetLon('jupiter', t), ay)),
+    venus:   rashi(sid(planetLon('venus',   t), ay)),
+    saturn:  rashi(sid(planetLon('saturn',  t), ay)),
+    rahu:    rashi(sid(rahuTrop, ay)),
+    ketu:    rashi(sid(n360(rahuTrop + 180), ay)),
+  };
+}
+
+// ────────────────────────────────────────────────────────────────
+//  SAMUDRIK SHASTRA RULES
+// ────────────────────────────────────────────────────────────────
+const RASHI_ZONE = {
+  1:'chehra ya mathe pe', 2:'gardan ya gale pe', 3:'kandhon ya baahon pe',
+  4:'seene ya pet pe',    5:'peeth ke upar',     6:'neeche pet ke paas',
+  7:'kamar ke paas',      8:'janghon ke upar',   9:'kamar ya janghon pe',
+  10:'ghutno ke paas',   11:'paaonon ke paas',  12:'pairon pe',
+};
+
+const PLANET_ZONE = {
+  sun:    'mathe ke beech ya dahine kandhe pe',
+  moon:   'baayein gaal ya seene pe',
+  mars:   'dahine kanpati ya naak ke paas',
+  mercury:'kandhon ya haathon pe — shayad ungliyon ke beech bhi',
+  jupiter:'dahine janghe ya dahine kaan ke paas',
+  venus:  'thodi ya honthon ke paas',
+  saturn: 'ghutno ya pairon pe',
+  rahu:   'sir ke peechhe ya dahine kandhe pe',
+  ketu:   'pairon mein ya reedh ki haddi ke neeche',
+};
+
+const PLANET_DESC = {
+  sun:    'dahini taraf, gehra',
+  moon:   'baayein taraf, halka sa',
+  mars:   'thoda raised ya gehra',
+  mercury:'chota, halka',
+  jupiter:'chota gol, shubh rang ka',
+  venus:  'naraam, gol, halka sa',
+  saturn: 'gehra, kala sa nishaan',
+  rahu:   'unusual — thoda alag, prominent',
+  ketu:   'chhupi si chhoti nishaan ya birthmark',
+};
+
+const EXALT = { sun:1, moon:2, mars:10, mercury:6, jupiter:4, venus:12, saturn:7 };
+const OWN   = {
+  sun:[5], moon:[4], mars:[1,8], mercury:[3,6],
+  jupiter:[9,12], venus:[2,7], saturn:[10,11],
+};
+
+function dignity(planet, rashiNo) {
+  if (['rahu','ketu'].includes(planet)) return 1;
+  if (EXALT[planet] === rashiNo) return 3;
+  if (OWN[planet]?.includes(rashiNo)) return 2;
+  return 1;
+}
+
+function house(planetRashi, lagnaRashi) {
+  return ((planetRashi - lagnaRashi + 12) % 12) + 1;
+}
+
+function rankPlanets(chart) {
+  const all = ['sun','moon','mars','mercury','jupiter','venus','saturn','rahu','ketu'];
+  return all
+    .map(p => {
+      const r = chart[p];
+      const h = house(r, chart.lagna);
+      const score = dignity(p, r) + ([1,4,7,10].includes(h) ? 1 : 0);
+      return { planet: p, score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+function makePredictions(chart) {
+  const ranked = rankPlanets(chart);
+  return [
+    { zone: RASHI_ZONE[chart.lagna],       desc: 'ek til ya nishaan',  source: 'lagna' },
+    { zone: PLANET_ZONE[ranked[0].planet], desc: PLANET_DESC[ranked[0].planet], source: ranked[0].planet },
+    { zone: PLANET_ZONE[ranked[1].planet], desc: PLANET_DESC[ranked[1].planet], source: ranked[1].planet },
+  ];
+}
+
+// ────────────────────────────────────────────────────────────────
+//  CHAT STATE MACHINE
+// ────────────────────────────────────────────────────────────────
+let state = {};
+
+function resetState(name, chart, preds) {
+  state = {
+    name, chart, preds,
+    step: 0,      // which prediction we're on (0,1,2)
+    confirmed: 0, // how many confirmed
+    phase: 'greet',
+  };
+}
+
+// ────────────────────────────────────────────────────────────────
+//  UI HELPERS
+// ────────────────────────────────────────────────────────────────
+function scrollBot() {
+  const m = document.getElementById('messages');
+  setTimeout(() => m.scrollTop = m.scrollHeight, 50);
+}
+
+function addMsg(text, cls) {
+  const m = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = `msg ${cls}`;
+  d.textContent = text;
+  m.appendChild(d);
+  scrollBot();
+}
+
+function showTyping() {
+  const m = document.getElementById('messages');
+  const w = document.createElement('div');
+  w.className = 'typing-wrap';
+  w.id = 'typing';
+  w.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  m.appendChild(w);
+  scrollBot();
+  return w;
+}
+
+function removeTyping() {
+  document.getElementById('typing')?.remove();
+}
+
+function lipikaMsg(text, delay = 0) {
+  return new Promise(resolve => {
+    const tw = showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addMsg(text, 'lipika');
+      resolve();
+    }, delay + 1200);
+  });
+}
+
+function removeChoices() {
+  document.getElementById('choices')?.remove();
+}
+
+function showChoices(yesLabel = 'Haan, hai ✓', noLabel = 'Nahi ✗') {
+  removeChoices();
+  const m = document.getElementById('messages');
+  const w = document.createElement('div');
+  w.className = 'choice-wrap';
+  w.id = 'choices';
+  w.innerHTML = `
+    <button class="choice-btn yes" onclick="userRespond(true)">${yesLabel}</button>
+    <button class="choice-btn no"  onclick="userRespond(false)">${noLabel}</button>`;
+  m.appendChild(w);
+  scrollBot();
+}
+
+// ────────────────────────────────────────────────────────────────
+//  CONVERSATION FLOW
+// ────────────────────────────────────────────────────────────────
+async function startConversation(name, chart) {
+  const preds = makePredictions(chart);
+  resetState(name, chart, preds);
+
+  // Greet
+  await lipikaMsg(`Haan ${name} ji, namaskar. 🙏`, 300);
+
+  // First prediction (lagna)
+  await lipikaMsg(
+    `${name} ji, aapke ${preds[0].zone} — ${preds[0].desc} zaroor hoga.`, 400
+  );
+  await lipikaMsg(`Hai na?`, 200);
+  showChoices();
+}
+
+async function userRespond(yes) {
+  removeChoices();
+  const { name, preds, step } = state;
+  const pred = preds[step];
+
+  if (yes) {
+    addMsg('Haan, hai ✓', 'user');
+    state.confirmed++;
+    await lipikaMsg(`Bilkul. Ye chart se seedha dikh rahi hoon main. 👁️`, 300);
+    await nextPrediction();
+  } else {
+    addMsg('Nahi ✗', 'user');
+    await lipikaMsg(
+      `Theek hai ${name} ji — chart mein aur bhi marks dikh rahe hain. Dhyaan se dekhna.`, 300
+    );
+    await nextPrediction();
+  }
+}
+
+async function nextPrediction() {
+  const { name, preds, step } = state;
+  state.step++;
+
+  if (state.step < preds.length) {
+    const next = preds[state.step];
+    await lipikaMsg(
+      `Aur ek cheez — aapke ${next.zone} bhi kuch hoga — ${next.desc}.`, 400
+    );
+    showChoices();
+  } else {
+    // Transition to life reading
+    await lipikaMsg(
+      `Ye marks sirf dikhaavat nahi hain, ${name} ji — ye aapke graha bata rahe hain. 🌟`, 400
+    );
+    await lipikaMsg(
+      `Inhi grahon se aapki zindagi ka bhi bahut kuch juda hai — rishte, kaam, sehat sab.`, 500
+    );
+    await lipikaMsg(
+      `Agar aap chahein to aur gehri baat karein? Kisi specific cheez ke baare mein puchh sakte hain.`, 400
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────
+//  GEOCODING
+// ────────────────────────────────────────────────────────────────
+async function geocode(place) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`;
+  const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  const data = await res.json();
+  if (!data.length) throw new Error('Jagah nahi mili. Kripya doosra naam likhein.');
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+}
+
+// ────────────────────────────────────────────────────────────────
+//  MAIN ENTRY
+// ────────────────────────────────────────────────────────────────
+async function startReading() {
+  const name    = document.getElementById('name').value.trim();
+  const dob     = document.getElementById('dob').value;
+  const tob     = document.getElementById('tob').value;
+  const place   = document.getElementById('place').value.trim();
+  const utcOff  = parseFloat(document.getElementById('timezone').value);
+  const statusEl = document.getElementById('status-msg');
+
+  if (!name || !dob || !tob || !place) {
+    statusEl.textContent = 'Kripya sabhi jaankari bharein.';
+    statusEl.className = 'status-msg error-msg';
+    return;
+  }
+
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  statusEl.className = 'status-msg';
+
+  try {
+    statusEl.textContent = 'Jagah dhoondh rahi hoon...';
+    const { lat, lon } = await geocode(place);
+
+    statusEl.textContent = 'Kundli dekh rahi hoon...';
+    const [yr, mo, dy] = dob.split('-').map(Number);
+    const [hr, mn]     = tob.split(':').map(Number);
+
+    const chart = await buildChart(yr, mo, dy, hr, mn, utcOff, lat, lon);
+
+    // Switch to chat
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('chat-section').style.display = 'block';
+
+    startConversation(name, chart);
+
+  } catch (e) {
+    statusEl.textContent = e.message || 'Kuch galat hua. Dubara try karein.';
+    statusEl.className = 'status-msg error-msg';
+    btn.disabled = false;
+  }
+}
+
+function goBack() {
+  document.getElementById('chat-section').style.display = 'none';
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('status-msg').textContent = '';
+  document.getElementById('status-msg').className = 'status-msg';
+}
+</script>
+</body>
+</html>
